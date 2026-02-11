@@ -1,6 +1,7 @@
 const fs = require('fs')
 const path = require('path')
 const express = require('express')
+const uuid = require('uuid');
 
 const app = express();
 
@@ -17,8 +18,23 @@ app.get('/restaurants', function(req, res) {
     res.render('restaurants', {numberOfRestau: storedRestaurants.length, restaurants: storedRestaurants});
 })
 
+app.get('/restaurants/:id', function(req, res) {
+    const restaurantId = req.params.id;
+    const filePath = path.join(__dirname, "data", "restaurants.json");
+    const fileData = fs.readFileSync(filePath);
+    const storedRestaurants = JSON.parse(fileData);
+
+    for(const x of storedRestaurants) {
+        if(x.id===restaurantId){
+    return res.render('restaurant-detail', {restaurant: x})
+        }
+    }
+    res.status(404).render('404')
+})
+
 app.post('/recommend', function(req, res) {
     const restaurant = req.body;
+    restaurant.id = uuid.v4();
     const filePath = path.join(__dirname, "data", "restaurants.json");
     const fileData = fs.readFileSync(filePath);
     const storedRestaurants = JSON.parse(fileData);
@@ -43,4 +59,12 @@ app.get('/', function(req, res) {
     res.render('index');  // this method is possible because we have used the ejs engine
 })
 
-app.listen(3000);
+app.use(function(req, res) {
+    res.status(404).render('404')
+})//our own middleware to handle client side errors-missed url
+
+app.use(function(error, req, res, next) {//special default error handler with 4 input parameters
+    res.status(500).render('500')
+})
+
+app.listen(3000);  
