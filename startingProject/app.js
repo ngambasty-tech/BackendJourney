@@ -1,9 +1,13 @@
-const fs = require('fs')
 const path = require('path')
 const express = require('express')
-const uuid = require('uuid');
+
+const defaultRoutes = require('./routes/default')
+const restaurantRoutes = require('./routes/restaurants')
 
 const app = express();
+
+app.use('/', defaultRoutes);//this middleware checkes all incoming routes and fowrd to defaul.js. if it matches,it is routed-- fisrt check
+app.use('/', restaurantRoutes)
 
 app.set('views', path.join(__dirname,"views"));
 app.set('view engine','ejs');//unlocking the templating feature for dynamic html content  engine is ejs
@@ -11,36 +15,15 @@ app.set('view engine','ejs');//unlocking the templating feature for dynamic html
 app.use(express.static('public'))
 app.use(express.urlencoded({extended: false}));
 
-app.get('/restaurants', function(req, res) {
-    const filePath = path.join(__dirname, "data", "restaurants.json");
-    const fileData = fs.readFileSync(filePath);
-    const storedRestaurants = JSON.parse(fileData);
-    res.render('restaurants', {numberOfRestau: storedRestaurants.length, restaurants: storedRestaurants});
-})
 
-app.get('/restaurants/:id', function(req, res) {
-    const restaurantId = req.params.id;
-    const filePath = path.join(__dirname, "data", "restaurants.json");
-    const fileData = fs.readFileSync(filePath);
-    const storedRestaurants = JSON.parse(fileData);
-
-    for(const x of storedRestaurants) {
-        if(x.id===restaurantId){
-    return res.render('restaurant-detail', {restaurant: x})
-        }
-    }
-    res.status(404).render('404')
-})
 
 app.post('/recommend', function(req, res) {
     const restaurant = req.body;
     restaurant.id = uuid.v4();
-    const filePath = path.join(__dirname, "data", "restaurants.json");
-    const fileData = fs.readFileSync(filePath);
-    const storedRestaurants = JSON.parse(fileData);
-    storedRestaurants.push(restaurant);
+    const restaurants = resData.getStoredRestaurants();
+    restaurants.push(restaurant);
 
-    fs.writeFileSync(filePath, JSON.stringify(storedRestaurants));
+    resData.storedRestaurants(restaurants)
     res.redirect('/confirm')
 })
 
@@ -52,12 +35,8 @@ app.get('/confirm', function(req, res) {
 res.render('confirm');
 })
 
-app.get('/about', function(req, res) {
-res.render('about');
-})
-app.get('/', function(req, res) {
-    res.render('index');  // this method is possible because we have used the ejs engine
-})
+
+
 
 app.use(function(req, res) {
     res.status(404).render('404')
